@@ -1,0 +1,31 @@
+--- a/src/bbsecondary.c	2013-04-26 22:49:03.018174178 +0700
++++ b/src/bbsecondary.c	2014-11-11 20:14:32.663347521 +0700
+@@ -119,6 +119,17 @@
+     if (!module_load(module_name, driver_name)) {
+       set_bb_error("Could not load GPU driver");
+       return false;
++    } else {
++      /* XXX NVIDIA KMS support */
++      if (strstr(module_name, "nvidia")) { /* We are using NVIDIA's proprietary driver */
++        char kms_module_name[1024];
++        sprintf(kms_module_name, "%s-modeset", module_name);
++        if (!module_load(kms_module_name, "nvidia_modeset")) {
++          char log_string[1024];
++          sprintf(log_string, "Cannot load KMS module: %s\n", kms_module_name);
++          bb_log(LOG_ERR, log_string);
++        }
++      }
+     }
+   }
+   return true;
+@@ -232,6 +243,10 @@
+       }
+       /* unload the driver loaded by the graphica card */
+       if (pci_get_driver(driver, pci_bus_id_discrete, sizeof driver)) {
++        /* XXX NVIDIA KMS support */
++        if (strstr(driver, "nvidia")) {
++          module_unload("nvidia_modeset");
++          module_unload("nvidia_drm");
++        }
+         module_unload(driver);
+       }
